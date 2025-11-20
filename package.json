@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "homepage": "https://Harshit7929.github.io/cloudmotiv-app",
+  
   "engines": {
     "node": "20.x"
   },
