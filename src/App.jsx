@@ -64,7 +64,6 @@ and impairment losses, etc. (EBITDA) 2,298.”
 `;
 
 export default function App() {
-  const pdfUrl = "/report.pdf"; // make sure public/report.pdf exists
   const viewerRef = useRef(null);
 
   const [activeRefNum, setActiveRefNum] = useState(null);
@@ -178,29 +177,20 @@ export default function App() {
         <div className="left-header">
           <strong>PDF</strong>
           <div style={{ marginLeft: 12, display: "flex", alignItems: "center" }}>
-            <button className="small" onClick={zoomOut}>
-              -
-            </button>
-            <button
-              className="small"
-              onClick={zoomIn}
-              style={{ marginLeft: 4, marginRight: 4 }}
-            >
-              +
-            </button>
-            <button className="small" onClick={resetZoom}>
-              100%
-            </button>
+            <button className="small" onClick={zoomOut}>-</button>
+            <button className="small" onClick={zoomIn} style={{ marginLeft: 4, marginRight: 4 }}>+</button>
+            <button className="small" onClick={resetZoom}>100%</button>
             <span style={{ marginLeft: 8, fontSize: 12 }}>
               Zoom: {Math.round(zoom * 100)}%
             </span>
           </div>
         </div>
 
-        <PdfViewer ref={viewerRef} file={pdfUrl} zoom={zoom} />
+        {/* IMPORTANT FIX: removed file={pdfUrl} */}
+        <PdfViewer ref={viewerRef} zoom={zoom} />
       </div>
 
-      {/* RIGHT: analysis text + search (unchanged) */}
+      {/* RIGHT: analysis text + search */}
       <div className="right-column">
         <h3>Analysis / Findings / Supporting Evidence</h3>
 
