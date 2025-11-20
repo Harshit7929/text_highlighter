@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const repoName = 'text_highlighter'   // <-- correct name (with g)
+const repoName = 'text_highlighter' 
 
 export default defineConfig({
   plugins: [react()],
