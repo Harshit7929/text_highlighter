@@ -1,4 +1,5 @@
 // src/pdfViewer.jsx
+
 import React, {
   forwardRef,
   useEffect,
@@ -7,11 +8,10 @@ import React, {
   useState
 } from "react";
 
-// Use the legacy build of pdfjs (most compatible with bundlers)
+// Use the legacy build of pdf.js (works with bundlers)
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-// Load the worker from the public folder. Using import.meta.env.BASE_URL ensures
-// the correct base path on GitHub Pages (e.g. /text_highlighter/).
+// Worker from public folder (works on GitHub Pages)
 pdfjsLib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + "pdf.worker.js";
 
 const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
@@ -33,14 +33,18 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
 
     (async () => {
       try {
+        // FIXED: use pdfjsLib.getDocument instead of getDocument
         const task = pdfjsLib.getDocument(file);
         const pdfDoc = await task.promise;
+
         if (cancelled) {
           await pdfDoc.destroy();
           return;
         }
+
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
+
       } catch (e) {
         if (!cancelled) setError(e?.message || String(e));
       }
@@ -50,8 +54,8 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
       cancelled = true;
       if (pdf) pdf.destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
+
 
   // Re-render pages whenever pdf/numPages/zoom changes
   useEffect(() => {
