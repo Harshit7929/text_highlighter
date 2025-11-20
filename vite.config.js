@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const repoName = 'cloudmotiv-app'
+const repoName = 'text_highliter'
 
 export default defineConfig({
   plugins: [react()],
@@ -10,4 +10,3 @@ export default defineConfig({
     include: ['pdfjs-dist/legacy/build/pdf']
   }
 })
-
