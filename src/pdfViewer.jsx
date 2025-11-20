@@ -8,11 +8,12 @@ import React, {
   useState
 } from "react";
 
-// Use the legacy build of pdf.js (works with bundlers)
+// Use the legacy build of pdf.js
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-// Worker from public folder (works on GitHub Pages)
-pdfjsLib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + "pdf.worker.js";
+// Use CDN worker (works both locally and on GitHub Pages)
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
   const containerRef = useRef(null);
@@ -22,29 +23,26 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
   const [highlights, setHighlights] = useState([]);
   const pageInfo = useRef({}); // page -> { scale, viewportHeight, offsetTop, offsetLeft }
 
-  // Load PDF document
   useEffect(() => {
     let cancelled = false;
+    let pdfDoc = null;
     setError(null);
     setHighlights([]);
     pageInfo.current = {};
 
-    if (!file) return;
+    const fileUrl = file || `${import.meta.env.BASE_URL}report.pdf`;
+    if (!fileUrl) return;
 
     (async () => {
       try {
-        // FIXED: use pdfjsLib.getDocument instead of getDocument
-        const task = pdfjsLib.getDocument(file);
-        const pdfDoc = await task.promise;
-
+        const task = pdfjsLib.getDocument(fileUrl);
+        pdfDoc = await task.promise;
         if (cancelled) {
           await pdfDoc.destroy();
           return;
         }
-
         setPdf(pdfDoc);
         setNumPages(pdfDoc.numPages);
-
       } catch (e) {
         if (!cancelled) setError(e?.message || String(e));
       }
@@ -52,12 +50,13 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
 
     return () => {
       cancelled = true;
-      if (pdf) pdf.destroy();
+      if (pdfDoc) pdfDoc.destroy().catch(() => {});
+      // also clear pdf state
+      setPdf(null);
+      setNumPages(0);
     };
   }, [file]);
 
-
-  // Re-render pages whenever pdf/numPages/zoom changes
   useEffect(() => {
     if (!pdf || !numPages || !containerRef.current) return;
 
@@ -95,7 +94,6 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
       pageInfo.current = meta;
     };
 
-    // clear old highlight when zoom changes
     setHighlights([]);
     renderPages().catch((e) => setError(e?.message || String(e)));
   }, [pdf, numPages, zoom]);
@@ -104,11 +102,9 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
     const c = containerRef.current;
     if (!c) return;
     const ch = c.clientHeight || 600;
-
     const desired = rect.top - ch / 2 + rect.height / 2;
     const maxScroll = Math.max(0, c.scrollHeight - ch);
     const pos = Math.max(0, Math.min(desired, maxScroll));
-
     try {
       c.scrollTo({ top: pos, behavior: "smooth" });
     } catch {
@@ -124,11 +120,8 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
 
       const total = pdf.numPages;
       const order = [];
-
       if (pageHint && pageHint >= 1 && pageHint <= total) order.push(pageHint);
-      for (let p = 1; p <= total; p++) {
-        if (!order.includes(p)) order.push(p);
-      }
+      for (let p = 1; p <= total; p++) if (!order.includes(p)) order.push(p);
 
       for (const pageNumber of order) {
         const page = await pdf.getPage(pageNumber);
@@ -141,7 +134,6 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
           height: it.height || 10
         }));
 
-        // ---------- 1) Try single-item substring highlight ----------
         for (let i = 0; i < items.length; i++) {
           const s = items[i].str;
           const lower = s.toLowerCase();
@@ -168,8 +160,7 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
           const { scale, viewportHeight, offsetTop, offsetLeft } = meta;
 
           const textTopPdf = y - h;
-          const top =
-            offsetTop + (viewportHeight - textTopPdf * scale) - h * scale;
+          const top = offsetTop + (viewportHeight - textTopPdf * scale) - h * scale;
           const height = h * scale;
 
           const baseWidth = (rightX - leftX) * scale;
@@ -183,15 +174,12 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
             height: height + pad * 2
           };
 
-          // nudge slightly up
           rect.top -= 6;
-
           setHighlights([rect]);
           scrollToRect(rect);
           return true;
         }
 
-        // ---------- 2) Fallback multi-item bounding box ----------
         const full = items.map((i) => i.str).join(" ").toLowerCase();
         const idx = full.indexOf(target);
         if (idx === -1) continue;
@@ -214,10 +202,7 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
         if (startItem === -1) startItem = 0;
         if (endItem === -1) endItem = startItem;
 
-        let minX = Infinity,
-          minY = Infinity,
-          maxX = -Infinity,
-          maxY = -Infinity;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
         for (let i = startItem; i <= endItem; i++) {
           const it = items[i];
@@ -251,9 +236,7 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
           height: height + pad * 2
         };
 
-        // same upward nudge
         rect.top -= 6;
-
         setHighlights([rect]);
         scrollToRect(rect);
         return true;
@@ -293,10 +276,12 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
               key={idx}
               className="highlight-box"
               style={{
+                position: "absolute",
                 left: h.left,
                 top: h.top,
                 width: h.width,
-                height: h.height
+                height: h.height,
+                pointerEvents: "none"
               }}
             />
           ))}
