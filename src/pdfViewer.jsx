@@ -7,10 +7,12 @@ import React, {
   useState
 } from "react";
 
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/build/pdf";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+// Use the legacy build of pdfjs (most compatible with bundlers)
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-GlobalWorkerOptions.workerSrc = pdfWorker;
+// Load the worker from the public folder. Using import.meta.env.BASE_URL ensures
+// the correct base path on GitHub Pages (e.g. /text_highlighter/).
+pdfjsLib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + "pdf.worker.js";
 
 const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
   const containerRef = useRef(null);
@@ -31,7 +33,7 @@ const PdfViewer = forwardRef(function PdfViewer({ file, zoom = 0.9 }, ref) {
 
     (async () => {
       try {
-        const task = getDocument(file);
+        const task = pdfjsLib.getDocument(file);
         const pdfDoc = await task.promise;
         if (cancelled) {
           await pdfDoc.destroy();
