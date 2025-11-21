@@ -24,7 +24,7 @@ const REFERENCES = {
 
 // Full analysis text for the right-hand side
 const RAW_TEXT = `
-Analysis
+Analysis-----
 No extraordinary or one-off items affecting EBITDA were reported in Maersk’s Q2 2025 results.
 The report explicitly notes that EBITDA improvements stemmed from operational performance—
 including volume growth, cost control, and margin improvement across Ocean, Logistics &
