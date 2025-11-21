@@ -1,3 +1,6 @@
+App.jsx
+
+
 // src/App.jsx
 import React, { useMemo, useRef, useState } from "react";
 import PdfViewer from "./pdfViewer";
@@ -24,7 +27,7 @@ const REFERENCES = {
 
 // Full analysis text for the right-hand side
 const RAW_TEXT = `
-Analysis-----
+Analysis
 No extraordinary or one-off items affecting EBITDA were reported in Maersk’s Q2 2025 results.
 The report explicitly notes that EBITDA improvements stemmed from operational performance—
 including volume growth, cost control, and margin improvement across Ocean, Logistics &
@@ -69,11 +72,6 @@ export default function App() {
   const [activeRefNum, setActiveRefNum] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [zoom, setZoom] = useState(0.9); // PDF zoom only
-  const [dark, setDark] = useState(false);
-
-  // For display only (download link). We intentionally do not pass file to PdfViewer
-  // because your previous fix removed file prop to avoid missing-PDF errors on some previews.
-  const pdfUrl = `${import.meta.env.BASE_URL || "/"}report.pdf`;
 
   const activeRef = activeRefNum ? REFERENCES[activeRefNum] : null;
 
@@ -129,9 +127,8 @@ export default function App() {
           <button
             key={`ref-${index}-${refNum}-${match.index}`}
             type="button"
-            className={`ref-btn ${activeRefNum === refNum ? "active-ref" : ""}`}
+            className="ref-btn"
             onClick={() => handleRefClick(refNum)}
-            title={`Jump to ${refMeta.label} (page ${refMeta.pageHint})`}
           >
             [{refNum}]
           </button>
@@ -165,7 +162,7 @@ export default function App() {
     }
   };
 
-  // Zoom helpers (only affect PdfViewer)
+  // Zoom helpers (only affect PDF side)
   const minZoom = 0.6;
   const maxZoom = 1.6;
   const step = 0.1;
@@ -177,147 +174,45 @@ export default function App() {
   const resetZoom = () => setZoom(0.9);
 
   return (
-    <div className={`app-root-simple ${dark ? "theme-dark" : ""}`} style={{ height: "100vh" }}>
-      {/* Top nav */}
-      <header className="app-topbar" style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "8px 12px",
-        borderBottom: "1px solid #ddd",
-        background: dark ? "#111" : "#fff",
-        zIndex: 10
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>CloudMotiv — PDF Inspector</h2>
-          <span style={{ color: "#888", fontSize: 13 }}>Highlight & link analysis</span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <a
-            href={pdfUrl}
-            download
-            className="small"
-            style={{ textDecoration: "none" }}
-            title="Download the report PDF"
-          >
-            Download PDF
-          </a>
-          <button
-            className="small"
-            onClick={() => setDark((d) => !d)}
-            title="Toggle theme"
-          >
-            {dark ? "Light" : "Dark"}
-          </button>
-          <a
-            className="small"
-            href="https://github.com/Harshit7929/text_highlighter"
-            target="_blank"
-            rel="noreferrer"
-            title="Open repo"
-            style={{ textDecoration: "none" }}
-          >
-            Repo
-          </a>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <div style={{ display: "flex", height: "calc(100% - 50px)" }}>
-        {/* LEFT: PDF viewer */}
-        <div className="left-column" style={{ display: "flex", flexDirection: "column" }}>
-          <div className="left-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <strong>PDF</strong>
-              <div style={{ marginLeft: 12, display: "flex", alignItems: "center" }}>
-                <button className="small" onClick={zoomOut}>-</button>
-                <button className="small" onClick={zoomIn} style={{ marginLeft: 4, marginRight: 4 }}>+</button>
-                <button className="small" onClick={resetZoom}>100%</button>
-                <span style={{ marginLeft: 8, fontSize: 12 }}>
-                  Zoom: {Math.round(zoom * 100)}%
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* quick jump links */}
-              <button
-                className="small"
-                onClick={async () => {
-                  if (viewerRef.current?.highlightPhrase) {
-                    await viewerRef.current.highlightPhrase({ phrase: REFERENCES[1].phrase, pageHint: REFERENCES[1].pageHint });
-                    setActiveRefNum(1);
-                  }
-                }}
-              >
-                Jump [1]
-              </button>
-              <button className="small" onClick={() => { setActiveRefNum(null); viewerRef.current?.clearHighlights?.(); }}>
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minHeight: 0 }}>
-            {/* IMPORTANT: keep not passing file prop (your prior fix) */}
-            <PdfViewer ref={viewerRef} zoom={zoom} />
+    <div className="app-root-simple">
+      {/* LEFT: PDF viewer */}
+      <div className="left-column">
+        <div className="left-header">
+          <strong>PDF</strong>
+          <div style={{ marginLeft: 12, display: "flex", alignItems: "center" }}>
+            <button className="small" onClick={zoomOut}>-</button>
+            <button className="small" onClick={zoomIn} style={{ marginLeft: 4, marginRight: 4 }}>+</button>
+            <button className="small" onClick={resetZoom}>100%</button>
+            <span style={{ marginLeft: 8, fontSize: 12 }}>
+              Zoom: {Math.round(zoom * 100)}%
+            </span>
           </div>
         </div>
 
-        {/* RIGHT: analysis text + search */}
-        <aside className="right-column" style={{ width: 420, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h3 style={{ margin: "8px 0" }}>Analysis / Findings / Supporting Evidence</h3>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="text"
-                placeholder="Search in analysis text…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
-                aria-label="Search analysis"
-              />
-              <button className="small" onClick={handleClear}>Clear</button>
-            </div>
-          </div>
-
-          <div style={{ fontSize: 13, color: "#444", marginBottom: 8 }}>
-            <strong>Instructions:</strong> Click any reference like <em>[1]</em> to jump to the corresponding phrase in the PDF.
-          </div>
-
-          <div className="analysis-body" style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
-            {visibleParagraphs.map((p, idx) => renderParagraph(p, idx))}
-          </div>
-
-          <div style={{ paddingTop: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 12, color: "#666" }}>
-                <strong>Legend</strong>: <span style={{ marginLeft: 8 }}>Yellow = matched phrase highlight</span>
-              </div>
-              <div style={{ fontSize: 12, color: "#666" }}>
-                <button className="small" onClick={() => window.open(pdfUrl, "_blank")}>Open PDF</button>
-              </div>
-            </div>
-          </div>
-        </aside>
+        {/* IMPORTANT FIX: removed file={pdfUrl} */}
+        <PdfViewer ref={viewerRef} zoom={zoom} />
       </div>
 
-      {/* Footer */}
-      <footer style={{
-        borderTop: "1px solid #eee",
-        padding: "8px 12px",
-        fontSize: 12,
-        color: "#666",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }}>
-        <div>© {new Date().getFullYear()} CloudMotiv — PDF Highlight Demo</div>
-        <div>
-          <a href="https://github.com/Harshit7929/text_highlighter" target="_blank" rel="noreferrer" style={{ color: "#666", textDecoration: "none" }}>Source</a>
+      {/* RIGHT: analysis text + search */}
+      <div className="right-column">
+        <h3>Analysis / Findings / Supporting Evidence</h3>
+
+        <div className="analysis-body">
+          {visibleParagraphs.map((p, idx) => renderParagraph(p, idx))}
         </div>
-      </footer>
+
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search in analysis text…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="button" className="small" onClick={handleClear}>
+            Clear
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
